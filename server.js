@@ -6,7 +6,7 @@ import { GoogleGenAI } from '@google/genai';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import 'dotenv/config';
-
+import fs from 'fs';
 const app = express();
 app.use(express.json());
 app.use(express.static('public')); // Serves the HTML, CSS, and JS files
@@ -58,7 +58,21 @@ const verifyToken = (req, res, next) => {
         next(); // Allow them through
     });
 };
-
+// ==========================================
+// TEMPORARY HACKATHON ROUTE: CLOUD DB SETUP
+// ==========================================
+app.get('/api/setup-db', async (req, res) => {
+    try {
+        // Read your init.sql file
+        const sql = fs.readFileSync('init.sql', 'utf8');
+        // Execute it inside the Render cloud database
+        await pool.query(sql);
+        res.send("<h1>✅ Cloud Database Setup Complete!</h1><p>You can now use the app.</p>");
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error setting up database: " + err.message);
+    }
+});
 // ==========================================
 // 3. FARMER PORTAL ROUTE (AI & CACHE)
 // ==========================================
