@@ -1,6 +1,7 @@
 import express from 'express';
 import { createClient } from 'redis';
-import pg from 'pg';
+import pkg from 'pg';
+const { Pool } = pkg;
 import { GoogleGenAI } from '@google/genai';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
@@ -14,6 +15,7 @@ app.use(express.static('public')); // Serves the HTML, CSS, and JS files
 // 1. SYSTEM INITIALIZATION
 // ==========================================
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
 // PostgreSQL Connection
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -21,7 +23,7 @@ const pool = new Pool({
 });
 
 // Redis Connection
-const redisClient = redis.createClient({
+const redisClient = createClient({
     url: process.env.REDIS_URL
 });
 
@@ -64,7 +66,7 @@ app.post('/api/analyze', async (req, res) => {
         }
 
         // B. Query Local DB for Available Supplies
-        const dbResult = await dbPool.query('SELECT * FROM local_supplies WHERE location = $1', [location]);
+        const dbResult = await pool.query('SELECT * FROM local_supplies WHERE location = $1', [location]);
         const localData = dbResult.rows.length ? JSON.stringify(dbResult.rows) : "No local supplies listed.";
 
         // C. Process with Gemini AI (Extracting Hub & Contact)
@@ -125,7 +127,7 @@ app.post('/api/ngo/login', async (req, res) => {
     
     try {
         // 2. Search for the user in the PostgreSQL database
-        const userResult = await dbPool.query('SELECT * FROM ngo_accounts WHERE username = $1', [username]);
+        const userResult = await pool.query('SELECT * FROM ngo_accounts WHERE username = $1', [username]);
         const user = userResult.rows[0];
 
         // 3. SECURITY CHECK: Validate existence and password
@@ -166,7 +168,7 @@ app.post('/api/ngo/update', verifyToken, async (req, res) => {
     
     try {
         // ACTUALLY UPDATE THE DATABASE SO THE AI CAN SEE THE NEW SUPPLIES
-        await dbPool.query(
+        await pool.query(
             `INSERT INTO local_supplies (provider_name, location, resource_type, quantity, contact_info) 
              VALUES ($1, $2, $3, $4, $5)`,
             [ngoName, ngoLocation, resource_type, quantity, 'Update via secure portal']
