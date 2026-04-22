@@ -23,14 +23,22 @@ const pool = new Pool({
 });
 
 // ==========================================
-// Redis Connection - Auto-Adapting Version
 // ==========================================
-const redisUrl = process.env.REDIS_URL || '';
-const isSecure = redisUrl.startsWith('rediss://');
+// Redis Connection - Robust Cloud Version
+// ==========================================
+const redisUrl = process.env.REDIS_URL;
+
+if (!redisUrl) {
+    console.error("⚠️ WARNING: REDIS_URL environment variable is missing!");
+}
 
 const redisClient = createClient({
     url: redisUrl,
-    socket: isSecure ? { tls: true, rejectUnauthorized: false } : {}
+    socket: {
+        // Only enforce TLS if the URL starts with rediss://
+        tls: redisUrl ? redisUrl.startsWith('rediss://') : false,
+        rejectUnauthorized: false 
+    }
 });
 
 // Safety net: Prevents the whole app from crashing if Redis blinks
@@ -195,4 +203,11 @@ app.post('/api/ngo/update', verifyToken, async (req, res) => {
 // ==========================================
 // START SERVER
 // ==========================================
-app.listen(3000, () => console.log('AgriCache API running on port 3000'));
+// ==========================================
+// START SERVER
+// ==========================================
+// Must use process.env.PORT for Render cloud deployment
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 AgriCache API running on port ${PORT}`);
+});
