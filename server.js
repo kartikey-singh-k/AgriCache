@@ -23,29 +23,23 @@ const pool = new Pool({
 });
 
 // ==========================================
-// ==========================================
-// Redis Connection - Robust Cloud Version
+// Redis Connection
 // ==========================================
 const redisUrl = process.env.REDIS_URL;
-
-if (!redisUrl) {
-    console.error("⚠️ WARNING: REDIS_URL environment variable is missing!");
-}
 
 const redisClient = createClient({
     url: redisUrl,
     socket: {
-        // Only enforce TLS if the URL starts with rediss://
+        family: 4, // CRITICAL: Forces Render to use IPv4 to talk to Upstash
         tls: redisUrl ? redisUrl.startsWith('rediss://') : false,
-        rejectUnauthorized: false 
+        rejectUnauthorized: false
     }
 });
 
-// Safety net: Prevents the whole app from crashing if Redis blinks
+// Safety net: Prevents app crash if socket drops
 redisClient.on('error', (err) => console.error('Redis Connection Error:', err));
 
 await redisClient.connect().catch(console.error);
-
 // ==========================================
 // 2. SECURITY CONFIGURATION (NGO PORTAL)
 // ==========================================
