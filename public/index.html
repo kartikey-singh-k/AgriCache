@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriCache | AI Relief Dashboard</title>
+    <link rel="manifest" href="/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1E8E3E;
+            --primary-hover: #166B2D;
+            --sidebar: #202124;
+            --bg-color: #F8F9FA;
+            --surface: #FFFFFF;
+            --text-main: #202124;
+            --text-muted: #5F6368;
+            --border: #DADCE0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background-color: var(--sidebar); color: white; padding: 2rem 1.5rem; display: flex; flex-direction: column; }
+        .sidebar h2 { color: #81C995; font-size: 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 10px;}
+        .sidebar h2::before { content: "🍃"; }
+        .history-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #9AA0A6; margin-bottom: 1rem; }
+        .history-list { list-style: none; overflow-y: auto; flex-grow: 1; }
+        .history-item { background: rgba(255,255,255,0.05); padding: 0.8rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.85rem; cursor: pointer; transition: background 0.2s; border-left: 3px solid transparent;}
+        .history-item:hover { background: rgba(255,255,255,0.1); border-left-color: #81C995;}
+
+        /* Main Content & Navbar */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .navbar { background-color: var(--surface); padding: 1rem 2.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .status-pill { background: #E6F4EA; color: #137333; padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px;}
+        .status-dot { width: 8px; height: 8px; background: #1E8E3E; border-radius: 50%; box-shadow: 0 0 0 2px rgba(30,142,62,0.2); animation: pulse 2s infinite;}
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(30,142,62,0.4); } 70% { box-shadow: 0 0 0 6px rgba(30,142,62,0); } 100% { box-shadow: 0 0 0 0 rgba(30,142,62,0); } }
+
+        /* Form Area */
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 2rem; width: 100%; }
+        .card { background: var(--surface); padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .input-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+        .input-group { flex: 1; margin-bottom: 1.5rem; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;}
+        
+        input, textarea { width: 100%; padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border); font-family: inherit; font-size: 1rem; transition: all 0.2s; background-color: #FAFAFA; resize: vertical;}
+        input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30, 142, 62, 0.15); background-color: var(--surface); }
+
+        /* Buttons */
+        .btn-submit { background-color: var(--primary); color: white; border: none; padding: 1rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 8px; cursor: pointer; width: 100%; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 2px 4px rgba(30,142,62,0.2);}
+        .btn-submit:hover { background-color: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(30,142,62,0.3);}
+        .btn-submit:disabled { background-color: var(--border); color: var(--text-muted); cursor: not-allowed; transform: none; box-shadow: none;}
+
+        .btn-mic { background-color: #1A73E8; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; margin-top: 0.5rem; transition: background 0.2s; }
+        .btn-mic:hover { background-color: #1557B0; }
+        .btn-mic.recording { background-color: #D93025; animation: micPulse 1.5s infinite; }
+        @keyframes micPulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        .spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results Area */
+        #result-container { margin-top: 2rem; display: none; animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .badge { display: inline-flex; align-items: center; gap: 5px; padding: 0.35rem 0.85rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: white; margin-bottom: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+        .badge.gemini { background: linear-gradient(135deg, #F29900, #E65100); }
+        .badge.redis { background: linear-gradient(135deg, #1A73E8, #1557B0); }
+
+        .result-box { background-color: #F8FAF8; border: 1px solid #CEE2D4; border-radius: 8px; padding: 2rem; position: relative; overflow: hidden;}
+        .result-box::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background-color: var(--primary); }
+        .result-box h3 { color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.3rem; line-height: 1.4;}
+        .urgency-indicator { display: inline-block; background: #FCE8E6; color: #C5221F; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 600; margin-bottom: 1.5rem; font-size: 0.85rem; border: 1px solid #FAD2CF;}
+        .result-box ul { padding-left: 1.5rem; color: var(--text-main); margin-top: 1rem;}
+        .result-box li { margin-bottom: 0.8rem; font-size: 1rem; padding-left: 0.5rem;}
+        .result-box li::marker { color: var(--primary); font-weight: bold; }
+
+        /* Logistics Hub Ticket */
+        .routing-ticket { margin-top: 1.5rem; background: #E8F0FE; border: 1px solid #1A73E8; border-radius: 8px; padding: 1.5rem; display: none; }
+        .ticket-header { font-size: 0.8rem; font-weight: 700; color: #1A73E8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+        .hub-name { font-size: 1.2rem; font-weight: 600; color: #174EA6; display: flex; align-items: center; gap: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" style="justify-content: space-between;">
+        <div>
+            <h2>AgriCache</h2>
+            <div class="history-title">Recent Triages</div>
+            <ul class="history-list" id="historyList">
+                </ul>
+        </div>
+        
+        <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+            <a href="/ngo-portal.html" style="text-decoration: none;">
+                <button style="width: 100%; background: transparent; border: 1px solid #81C995; color: #81C995; padding: 0.8rem; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#81C995'; this.style.color='#202124';" onmouseout="this.style.background='transparent'; this.style.color='#81C995';">
+                    🔐 NGO Admin Login
+                </button>
+            </a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <nav class="navbar">
+            <h3 style="font-weight: 500; color: var(--text-muted);">Triage & Logistics Portal</h3>
+            <div class="status-pill" id="network-status">
+                <div class="status-dot"></div> System Online
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="card">
+                <div class="input-row">
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label for="location">Location Hub</label>
+                        <input type="text" id="location" value="Patna" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="query">Distress Report / Symptom</label>
+                    <textarea id="query" rows="3" placeholder="e.g., My wheat crops have yellow spots on the leaves."></textarea>
+                    
+                    <button type="button" class="btn-mic" id="micBtn" onclick="startDictation()">
+                        🎤 Tap to Speak (Hindi)
+                    </button>
+                </div>
+                
+                <button class="btn-submit" id="submitBtn" onclick="analyzeData()">
+                    <span id="btnText">Analyze & Route Request</span>
+                    <div class="spinner" id="loader"></div>
+                </button>
+
+                <div id="result-container">
+                    <span class="badge" id="source-badge"></span>
+                    <div class="result-box">
+                        <div class="urgency-indicator" id="urgency-score"></div>
+                        <h3 id="issue-title"></h3>
+                        <ul id="action-steps"></ul>
+                        
+                        <div id="routing-ticket" class="routing-ticket">
+                            <div class="ticket-header">🚚 Authorized Logistics Hub Match</div>
+                            <div id="hub-name" class="hub-name"></div>
+                            <button style="margin-top: 1rem; background: #1A73E8; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-weight: 600;">Get Directions</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. PWA & OFFLINE QUEUEING LOGIC ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW Error', err));
+            });
+        }
+
+        const btnText = document.getElementById('btnText');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusPill = document.getElementById('network-status');
+
+        window.addEventListener('offline', () => {
+            statusPill.innerHTML = '⚠️ Offline Mode Active';
+            statusPill.style.background = '#FEF7E0';
+            statusPill.style.color = '#B06000';
+            btnText.innerText = "Save to Offline Queue";
+        });
+
+        window.addEventListener('online', () => {
+            statusPill.innerHTML = '<div class="status-dot"></div> System Online';
+            statusPill.style.background = '#E6F4EA';
+            statusPill.style.color = '#137333';
+            btnText.innerText = "Analyze & Route Request";
+            checkOfflineQueue();
+        });
+
+        function checkOfflineQueue() {
+            const queuedData = localStorage.getItem('agricache_queue');
+            if (queuedData) {
+                const data = JSON.parse(queuedData);
+                document.getElementById('location').value = data.location;
+                document.getElementById('query').value = data.query;
+                alert("Network restored! Processing your queued distress report...");
+                localStorage.removeItem('agricache_queue');
+                analyzeData(); 
+            }
+        }
+
+        // --- 2. NATIVE WEB SPEECH API (VERNACULAR LAYER) ---
+        const micBtn = document.getElementById('micBtn');
+        const queryInput = document.getElementById('query');
+
+        if ('webkitSpeechRecognition' in window) {
+            const recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'hi-IN';
+
+            recognition.onstart = function() {
+                micBtn.innerHTML = "🔴 Listening... Speak Now";
+                micBtn.classList.add("recording");
+            };
+
+            recognition.onresult = function(event) {
+                queryInput.value = event.results[0][0].transcript;
+                resetMicButton();
+            };
+
+            recognition.onerror = function() { resetMicButton(); };
+            recognition.onend = function() { resetMicButton(); };
+
+            function resetMicButton() {
+                micBtn.innerHTML = "🎤 Tap to Speak (Hindi)";
+                micBtn.classList.remove("recording");
+            }
+
+            function startDictation() { recognition.start(); }
+        } else {
+            micBtn.style.display = "none";
+        }
+
+        // --- 3. UI INTERACTION & FETCH LOGIC ---
+        async function typeText(element, text, speed = 15) {
+            element.innerHTML = '';
+            for (let i = 0; i < text.length; i++) {
+                element.innerHTML += text.charAt(i);
+                await new Promise(r => setTimeout(r, speed));
+            }
+        }
+
+        function addToHistory(location, issueSnippet) {
+            const list = document.getElementById('historyList');
+            const snippet = issueSnippet.length > 30 ? issueSnippet.substring(0, 30) + '...' : issueSnippet;
+            const item = document.createElement('li');
+            item.className = 'history-item';
+            item.innerHTML = `<strong>${location}</strong><br><span style="color: #9AA0A6;">${snippet}</span>`;
+            list.prepend(item);
+        }
+
+        async function analyzeData() {
+            const location = document.getElementById('location').value;
+            const query = document.getElementById('query').value;
+            
+            if(!query) return alert("Please enter a distress report.");
+
+            // Offline Check Interceptor
+            if (!navigator.onLine) {
+                localStorage.setItem('agricache_queue', JSON.stringify({ location, query }));
+                alert("Network dropped. Saved in the offline queue. Will auto-send when connection is restored.");
+                return;
+            }
+
+            const loader = document.getElementById('loader');
+            const resultContainer = document.getElementById('result-container');
+            const sourceBadge = document.getElementById('source-badge');
+            
+            submitBtn.disabled = true;
+            btnText.innerText = "Processing Logistics Data...";
+            loader.style.display = "block";
+            resultContainer.style.display = "none";
+            document.getElementById('action-steps').innerHTML = ''; 
+            
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ farmerQuery: query, location: location })
+                });
+
+                const json = await response.json();
+                console.log("RAW AI DATA:", json.data);
+                resultContainer.style.display = "block";
+
+                // Setup Badges
+                if (json.source.includes('cache')) {
+                    sourceBadge.className = 'badge redis';
+                    sourceBadge.innerHTML = '⚡ Served via Redis Cache (0ms)';
+                } else {
+                    sourceBadge.className = 'badge gemini';
+                    sourceBadge.innerHTML = '✨ Processed by Gemini AI';
+                }
+
+                // AI Typing & Urgency
+                document.getElementById('urgency-score').innerText = `Criticality Level: ${json.data.urgency_level}/5`;
+                await typeText(document.getElementById('issue-title'), json.data.issue_detected, 15);
+                
+                // Animate Action Steps
+                const stepsList = document.getElementById('action-steps');
+                for (let step of json.data.action_steps) {
+                    const li = document.createElement('li');
+                    li.innerText = step;
+                    li.style.opacity = '0';
+                    li.style.transform = 'translateY(10px)';
+                    li.style.transition = 'all 0.3s ease-out';
+                    stepsList.appendChild(li);
+                    
+                    setTimeout(() => { li.style.opacity = '1'; li.style.transform = 'translateY(0)'; }, 50);
+                    await new Promise(r => setTimeout(r, 300)); 
+                }
+
+                // Show Routing Ticket if Hub is Found
+                // Show Routing Ticket if Hub is Found
+                const routingTicket = document.getElementById('routing-ticket');
+                const hubName = document.getElementById('hub-name');
+                
+                // Updated condition to match the new prompt rule
+                if (json.data.recommended_hub && json.data.recommended_hub !== "None" && json.data.recommended_hub !== "No local hub found") {
+                    hubName.innerHTML = `📍 ${json.data.recommended_hub}`;
+                    routingTicket.style.display = "block"; 
+                } else {
+                    routingTicket.style.display = "none";
+                }
+
+                addToHistory(location, query);
+
+            } catch (error) {
+                alert("Connection failed. Check server status.");
+            } finally {
+                submitBtn.disabled = false;
+                btnText.innerText = navigator.onLine ? "Analyze & Route Request" : "Save to Offline Queue";
+                loader.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>

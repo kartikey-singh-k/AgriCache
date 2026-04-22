@@ -1,0 +1,53 @@
+# ========================
+# 🛑 SECURITY: NEVER COMMIT THESE
+# ========================
+.env
+.env.local
+.env.*
+
+# ========================
+# 📦 NODE.JS DEPENDENCIES
+# ========================
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ========================
+# 🐳 DOCKER & DATABASE
+# ========================
+# Ignore local database volume mounts (if you mapped them to a local folder)
+pgdata/
+redisdata/
+db-data/
+
+# ========================
+# 🖥️ OS GENERATED FILES
+# ========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ========================
+# 📝 LOGS & TEMPORARY FILES
+# ========================
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ========================
+# ⚙️ EDITOR / IDE CONFIG
+# ========================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
