@@ -22,17 +22,18 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false } // Required for cloud databases
 });
 
-// Redis Connection
-// Redis Connection
+// ==========================================
+// Redis Connection - Auto-Adapting Version
+// ==========================================
+const redisUrl = process.env.REDIS_URL || '';
+const isSecure = redisUrl.startsWith('rediss://');
+
 const redisClient = createClient({
-    url: process.env.REDIS_URL,
-    socket: {
-        tls: true,
-        rejectUnauthorized: false // Tells Render not to instantly block the free-tier certificate
-    }
+    url: redisUrl,
+    socket: isSecure ? { tls: true, rejectUnauthorized: false } : {}
 });
 
-// This prevents the server from completely crashing if the cache temporarily disconnects
+// Safety net: Prevents the whole app from crashing if Redis blinks
 redisClient.on('error', (err) => console.error('Redis Connection Error:', err));
 
 await redisClient.connect().catch(console.error);
