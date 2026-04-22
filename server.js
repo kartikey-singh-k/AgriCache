@@ -14,8 +14,16 @@ app.use(express.static('public')); // Serves the HTML, CSS, and JS files
 // 1. SYSTEM INITIALIZATION
 // ==========================================
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const redisClient = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
-const dbPool = new pg.Pool({ connectionString: process.env.DB_URL || 'postgres://user:password@localhost:5432/agricache' });
+// PostgreSQL Connection
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false } // Required for cloud databases
+});
+
+// Redis Connection
+const redisClient = redis.createClient({
+    url: process.env.REDIS_URL
+});
 
 await redisClient.connect().catch(console.error);
 
