@@ -42,6 +42,43 @@
         /* Dashboard specific */
         #dashboard-view { display: none; width: 100%; max-width: 800px; justify-content: flex-start; align-items: flex-start; }
         .badge { display: inline-block; padding: 0.3rem 0.6rem; background: #E8F0FE; color: #1A73E8; border-radius: 4px; font-size: 0.8rem; font-weight: 600; margin-bottom: 1rem; }
+        /* ==========================================
+   Mobile Responsiveness (Phones & Tablets)
+   ========================================== */
+        @media (max-width: 768px) {
+            /* 1. Stack the sidebar and main content vertically */
+            body {
+                flex-direction: column;
+                height: auto; /* Allow scrolling on small screens */
+            }
+
+            /* 2. Turn the sidebar into a top navigation bar */
+            .sidebar {
+                width: 100%;
+                padding: 1.5rem;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            /* 3. Adjust sidebar elements for the top bar */
+            .sidebar h2 {
+                margin-bottom: 0;
+                font-size: 1.2rem;
+            }
+            
+            .nav-item {
+                margin-bottom: 0;
+                padding: 0.5rem;
+            }
+
+            /* 4. Give the main content area some breathing room */
+            .main-content {
+                padding: 1rem;
+                justify-content: flex-start;
+                margin-top: 2rem;
+            }
+        }
     </style>
 </head>
 <body>
