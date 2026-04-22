@@ -23,9 +23,17 @@ const pool = new Pool({
 });
 
 // Redis Connection
+// Redis Connection
 const redisClient = createClient({
-    url: process.env.REDIS_URL
+    url: process.env.REDIS_URL,
+    socket: {
+        tls: true,
+        rejectUnauthorized: false // Tells Render not to instantly block the free-tier certificate
+    }
 });
+
+// This prevents the server from completely crashing if the cache temporarily disconnects
+redisClient.on('error', (err) => console.error('Redis Connection Error:', err));
 
 await redisClient.connect().catch(console.error);
 
